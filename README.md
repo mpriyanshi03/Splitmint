@@ -1,5 +1,7 @@
 # SplitMint 💰 - Your Gateway to Karbon
 
+[![Live Demo]](https://splitmint-two.vercel.app)
+
 SplitMint is a modern web application for splitting expenses among friends and groups. Built with the MERN stack (MongoDB, Express, React, Node.js).
 
 ## Features ✨
