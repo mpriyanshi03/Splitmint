@@ -11,7 +11,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:3000',          // local React
-  'https://splitmint-two.vercel.app' // Vercel production
+  'https://splitmint-1.onrender.com' // Vercel production
 ];
 
 app.use(
