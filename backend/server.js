@@ -5,54 +5,93 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware setup - pretty standard stuff
-app.use(cors());
+/* =========================
+   CORS CONFIG (RENDER SAFE)
+   ========================= */
+
+const allowedOrigins = [
+  'http://localhost:3000',          // local React
+  'https://splitmint-two.vercel.app' // Vercel production
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow Postman / server-to-server calls
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+
+/* =========================
+   MIDDLEWARE
+   ========================= */
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection - connecting to our database
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/splitmint';
+/* =========================
+   DATABASE CONNECTION
+   ========================= */
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB successfully!');
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is missing');
   process.exit(1);
+}
+
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });
+
+/* =========================
+   ROUTES
+   ========================= */
+
+app.get('/', (req, res) => {
+  res.send('SplitMint Backend is running 🚀');
 });
 
-// Import routes
-const authRoutes = require('./routes/auth');
-const groupRoutes = require('./routes/groups');
-const expenseRoutes = require('./routes/expenses');
-const balanceRoutes = require('./routes/balance');
-
-// API routes - organizing our endpoints
-app.use('/api/auth', authRoutes);
-app.use('/api/groups', groupRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/balance', balanceRoutes);
-
-// Health check endpoint - useful for debugging
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'SplitMint API is running! 🚀' });
+  res.json({ status: 'ok' });
 });
 
-// Basic error handling middleware
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/groups', require('./routes/groups'));
+app.use('/api/expenses', require('./routes/expenses'));
+app.use('/api/balance', require('./routes/balance'));
+
+/* =========================
+   ERROR HANDLER
+   ========================= */
+
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error(err.message);
   res.status(err.status || 500).json({
-    message: err.message || 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err : {}
+    message: err.message || 'Internal Server Error'
   });
 });
 
-// Start the server
+/* =========================
+   START SERVER
+   ========================= */
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
